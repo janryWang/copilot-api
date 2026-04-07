@@ -34,7 +34,19 @@ export function normalizeApiKeys(apiKeys: unknown): Array<string> {
 
 export function getConfiguredApiKeys(): Array<string> {
   const config = getConfig()
-  return normalizeApiKeys(config.auth?.apiKeys)
+  const fromConfig = normalizeApiKeys(config.auth?.apiKeys)
+
+  const envRaw = process.env.API_KEYS ?? process.env.API_KEY
+  const fromEnv = envRaw
+    ? normalizeApiKeys(
+        envRaw
+          .split(",")
+          .map((k) => k.trim())
+          .filter((k) => k.length > 0),
+      )
+    : []
+
+  return [...new Set([...fromConfig, ...fromEnv])]
 }
 
 export function extractRequestApiKey(c: Context): string | null {
