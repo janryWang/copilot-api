@@ -1,32 +1,11 @@
-# FROM oven/bun:1.3.11-alpine AS builder
-# WORKDIR /app
+FROM oven/bun:1.3.11-alpine AS builder
+WORKDIR /app
 
-# COPY ./package.json ./bun.lock ./
-# RUN bun install --frozen-lockfile
+COPY ./package.json ./bun.lock ./
+RUN bun install --frozen-lockfile
 
-# COPY . .
-# RUN bun run build
-
-# FROM oven/bun:1.3.11-alpine AS runner
-# WORKDIR /app
-
-# COPY ./package.json ./bun.lock ./
-# RUN bun install --frozen-lockfile --production --ignore-scripts --no-cache
-
-# COPY --from=builder /app/dist ./dist
-# COPY --from=builder /app/pages ./pages
-
-# EXPOSE 4141
-
-# HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-#   CMD wget --spider -q http://localhost:4141/ || exit 1
-
-# COPY entrypoint.sh /entrypoint.sh
-# RUN chmod +x /entrypoint.sh
-# ENTRYPOINT ["/entrypoint.sh"]
-
-
-# ... 前面部分保持不变 ...
+COPY . .
+RUN bun run build
 
 FROM oven/bun:1.3.11-alpine AS runner
 WORKDIR /app
@@ -39,5 +18,10 @@ COPY --from=builder /app/pages ./pages
 
 EXPOSE 4141
 
-# 关键修改：强制绑定 0.0.0.0 + 使用 Railway 的 ${PORT}
-CMD ["bun", "run", "start", "--port", "${PORT}", "--host", "0.0.0.0"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --spider -q http://0.0.0.0:${PORT}/ || exit 1
+
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENTRYPOINT ["/entrypoint.sh"]
+
