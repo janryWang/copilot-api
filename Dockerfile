@@ -26,19 +26,18 @@
 # ENTRYPOINT ["/entrypoint.sh"]
 
 
-FROM oven/bun:1.3.11-alpine
+# ... 前面部分保持不变 ...
 
+FROM oven/bun:1.3.11-alpine AS runner
 WORKDIR /app
 
-# 复制依赖文件并安装
-COPY package*.json bun.lock* ./
-RUN bun install --frozen-lockfile --production
+COPY ./package.json ./bun.lock ./
+RUN bun install --frozen-lockfile --production --ignore-scripts --no-cache
 
-# 复制所有源码
-COPY . .
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/pages ./pages
 
-# 暴露端口（copilot-api 默认 4141）
 EXPOSE 4141
 
-# 直接使用 bun run start（项目自身的启动脚本，能正确读取环境变量）
-CMD ["bun", "run", "start", "--port", "${PORT}"]
+# 关键修改：强制绑定 0.0.0.0 + 使用 Railway 的 ${PORT}
+CMD ["bun", "run", "start", "--port", "${PORT}", "--host", "0.0.0.0"]
