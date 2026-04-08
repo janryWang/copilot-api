@@ -42,9 +42,19 @@ export async function handleCompletion(c: Context) {
   if (state.manualApprove) await awaitApproval()
 
   if (isNullish(payload.max_tokens)) {
+    // GitHub Copilot backend enforces different output caps for streaming vs
+    // non-streaming requests. Picking max_output_tokens blindly causes
+    // non-streaming callers (e.g. crewAI/litellm sync agents) to exceed
+    // max_non_streaming_output_tokens and get their connection dropped.
+    const limits = selectedModel?.capabilities.limits
+    const isStreaming = payload.stream === true
+    const cap =
+      isStreaming
+        ? limits?.max_output_tokens
+        : (limits?.max_non_streaming_output_tokens ?? limits?.max_output_tokens)
     payload = {
       ...payload,
-      max_tokens: selectedModel?.capabilities.limits.max_output_tokens,
+      max_tokens: cap,
     }
     debugJson(logger, "Set max_tokens to:", payload.max_tokens)
   }

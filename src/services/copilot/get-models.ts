@@ -20,6 +20,7 @@ export interface ModelsResponse {
 interface ModelLimits {
   max_context_window_tokens?: number
   max_output_tokens?: number
+  max_non_streaming_output_tokens?: number
   max_prompt_tokens?: number
   max_inputs?: number
 }
