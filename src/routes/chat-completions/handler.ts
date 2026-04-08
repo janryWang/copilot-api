@@ -73,7 +73,17 @@ export async function handleCompletion(c: Context) {
 
   if (isNonStreaming(response)) {
     debugJson(logger, "Non-streaming response:", response)
-    return c.json(response)
+    // Normalize to strict OpenAI spec. Copilot backend omits `object` and
+    // `choices[].index`, which strict clients (e.g. pydantic-ai) reject.
+    const normalized = {
+      ...response,
+      object: response.object ?? "chat.completion",
+      choices: response.choices.map((choice, index) => ({
+        ...choice,
+        index: choice.index ?? index,
+      })),
+    }
+    return c.json(normalized)
   }
 
   logger.debug("Streaming response")
